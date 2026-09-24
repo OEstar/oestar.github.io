@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>OE+</title>
+    <meta name="description" content="OE+ — monitoraggio OEE in tempo reale per la produzione. OE-star.">
+    <meta name="theme-color" content="#13b090">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" href="icons/favicon.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="OE+">
+    <meta name="robots" content="noindex">
+    <style>
+        :root {
+            --brand: #13b090;
+            --text: #1e293b;
+            --muted: #64748b;
+            --bg: #ffffff;
+        }
+        html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+        #app { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: none; }
+        .screen { position: fixed; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 14px; padding: 16px; text-align: center; }
+        .logo { display: flex; align-items: center; gap: 12px; font-size: 2.4rem; font-weight: 800; }
+        .logo img { height: 1.6em; }
+        .muted { color: var(--muted); max-width: 420px; line-height: 1.5; }
+        .spinner { width: 34px; height: 34px; border: 3px solid #e2e8f0; border-top-color: var(--brand);
+            border-radius: 50%; animation: spin 0.9s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+        footer { position: fixed; bottom: 12px; width: 100%; text-align: center; font-size: 0.8rem; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <!-- Caricamento -->
+    <div id="loading" class="screen hidden">
+        <div class="logo"><img src="icons/icon-192.png" alt="">OE+</div>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Nessun collegamento configurato -->
+    <div id="landing" class="screen hidden">
+        <div class="logo"><img src="icons/icon-192.png" alt="">OE+</div>
+        <div class="muted">
+            Monitoraggio OEE in tempo reale per la produzione.<br>
+            Per accedere usa il <strong>link fornito dal responsabile</strong> della tua azienda.
+        </div>
+        <div class="muted" style="font-size:0.85rem">
+            Real-time OEE monitoring. To sign in, use the link provided by your manager.
+        </div>
+        <footer>OE-star · Operational Excellence</footer>
+    </div>
+
+    <iframe id="app" title="OE+" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+
+    <script>
+        // Applicazioni raggiungibili. Ogni voce è un progetto Apps Script (un foglio Google).
+        // Aggiungere qui un'azienda/reparto SOLO dopo aver impostato la sua ACCESS_KEY:
+        // il link vero è  https://oestar.github.io/?a=<nome>&k=<chiave>
+        var TARGETS = {
+            test: 'https://script.google.com/macros/s/AKfycbzoSd0axbZljzUfnznPBwVSLyBWbzMUq6GTMSDBv3j4POJRNcG2x8uBRcFJL6kjA2wC/exec'
+        };
+
+        var STORE_KEY = 'oeplus_link';
+        var PASS_PARAMS = ['k', 'machine', 'view']; // parametri inoltrati all'app
+
+        function readConfig() {
+            var q = new URLSearchParams(location.search);
+            if (q.has('a')) {
+                var cfg = { a: q.get('a') };
+                PASS_PARAMS.forEach(function (p) { if (q.has(p)) cfg[p] = q.get(p); });
+                try { localStorage.setItem(STORE_KEY, JSON.stringify(cfg)); } catch (e) {}
+                // Toglie la chiave dalla barra degli indirizzi (resta memorizzata sul dispositivo)
+                try { history.replaceState(null, '', location.pathname); } catch (e) {}
+                return cfg;
+            }
+            try { return JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { return null; }
+        }
+
+        var cfg = readConfig();
+        var base = cfg && TARGETS[cfg.a];
+
+        if (!base) {
+            document.getElementById('landing').classList.remove('hidden');
+        } else {
+            var loading = document.getElementById('loading');
+            var frame = document.getElementById('app');
+            loading.classList.remove('hidden');
+            var params = new URLSearchParams();
+            PASS_PARAMS.forEach(function (p) { if (cfg[p]) params.set(p, cfg[p]); });
+            frame.addEventListener('load', function () {
+                frame.style.display = 'block';
+                loading.classList.add('hidden');
+            });
+            frame.src = base + (params.toString() ? '?' + params.toString() : '');
+        }
+    </script>
+</body>
+</html>
