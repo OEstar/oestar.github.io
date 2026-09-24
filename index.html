@@ -79,15 +79,30 @@
                 try { history.replaceState(null, '', location.pathname); } catch (e) {}
                 return cfg;
             }
+            // Parametro "r" = ricarica anti-cache: non serve più, lo tolgo dalla barra
+            if (q.has('r')) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
             try { return JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { return null; }
         }
 
         var cfg = readConfig();
         var base = cfg && TARGETS[cfg.a];
+        var RELOAD_FLAG = 'oeplus_reload';
+
+        if (cfg && !base) {
+            // Link presente ma non riconosciuto: probabilmente questa pagina è una copia vecchia in cache
+            // (GitHub Pages la tiene fino a 10 min). Ricarico UNA volta con un indirizzo nuovo.
+            var tried = false;
+            try { tried = sessionStorage.getItem(RELOAD_FLAG) === '1'; } catch (e) {}
+            if (!tried) {
+                try { sessionStorage.setItem(RELOAD_FLAG, '1'); } catch (e) {}
+                location.replace(location.pathname + '?r=' + Date.now());
+            }
+        }
 
         if (!base) {
             document.getElementById('landing').classList.remove('hidden');
         } else {
+            try { sessionStorage.removeItem(RELOAD_FLAG); } catch (e) {}
             var loading = document.getElementById('loading');
             var frame = document.getElementById('app');
             loading.classList.remove('hidden');
